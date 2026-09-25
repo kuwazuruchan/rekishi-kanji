@@ -73,6 +73,10 @@
   .yomi { font-size:34px; font-weight:700; letter-spacing:.06em; line-height:1.3; word-break:break-all; }
   .yomi .star { color:var(--red); font-size:18px; vertical-align:middle; margin-right:4px; }
   .hint { color:var(--muted); font-size:15px; }
+  .qphoto { margin:4px 0 8px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .qphoto img { max-width:100%; max-height:280px; border-radius:10px; object-fit:contain; background:var(--soft); }
+  .qphoto figcaption { font-size:10px; color:var(--muted); text-align:center; word-break:break-all; }
+  .yomi.prompt { font-size:22px; letter-spacing:.02em; }
   .speak { display:inline-flex; align-items:center; gap:6px; font-size:15px; padding:8px 14px; margin-top:8px; }
   .speak svg { width:20px; height:20px; }
   .yomi.hidden-yomi { color:var(--muted); letter-spacing:.3em; }
@@ -152,6 +156,12 @@
     <div class="chips">
       <button class="chip" id="starOnly" aria-pressed="false">★だいじな言葉だけ</button>
     </div>
+    <div class="label">問題のタイプ</div>
+    <div class="chips" id="modeChips">
+      <button class="chip" data-mode="yomi" aria-pressed="true">よみがな</button>
+      <button class="chip" data-mode="photo" aria-pressed="false">写真を見て答える</button>
+      <button class="chip" data-mode="mix" aria-pressed="false">まぜる</button>
+    </div>
     <div class="label">採点のきびしさ（書いた字をコンピューターが読み取って採点）</div>
     <div class="chips">
       <button class="chip" id="gNormal" aria-pressed="true">ふつう</button>
@@ -177,6 +187,10 @@
     <div class="bar"><i id="barFill"></i></div>
     <div>
       <div class="era" id="qEra"></div>
+      <figure class="qphoto" id="qPhoto" hidden>
+        <img id="qImg" alt="問題の写真">
+        <figcaption id="qCredit"></figcaption>
+      </figure>
       <div class="yomi" id="qYomi"></div>
       <div class="hint" id="qHint"></div>
       <button class="btn ghost speak" id="speakBtn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>もう一回きく</button>
@@ -249,6 +263,7 @@
 </div>
 
 <script src="kanji_data.js"></script>
+<script src="photos.js"></script>
 <script>
 (function () {
   "use strict";
@@ -350,13 +365,30 @@
     var on = $("starOnly").getAttribute("aria-pressed") !== "true";
     $("starOnly").setAttribute("aria-pressed", String(on)); updateSetupNote();
   });
+  var mode = "yomi";
+  var PHOTO_BY = {};
+  (window.KANJI_PHOTOS || []).forEach(function (ph) { PHOTO_BY[ph.kanji] = ph; });
+  if (!Object.keys(PHOTO_BY).length) $("modeChips").previousElementSibling.hidden = $("modeChips").hidden = true;
+  $("modeChips").querySelectorAll(".chip").forEach(function (b) {
+    b.addEventListener("click", function () {
+      mode = b.dataset.mode;
+      $("modeChips").querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); });
+      updateSetupNote();
+    });
+  });
+  function withPhoto(q) { var ph = PHOTO_BY[q.kanji]; return ph ? Object.assign({}, q, { photo: ph }) : q; }
   function pool() {
+    if (mode === "photo") return basePool().filter(function (q) { return PHOTO_BY[q.kanji]; }).map(withPhoto);
+    if (mode === "mix") return basePool().map(function (q) { return PHOTO_BY[q.kanji] && Math.random() < 0.5 ? withPhoto(q) : q; });
+    return basePool();
+  }
+  function basePool() {
     var starOnly = $("starOnly").getAttribute("aria-pressed") === "true";
     return ALL.filter(function (q) { return selEras[q.era] && (!starOnly || q.star); });
   }
   function updateSetupNote() {
     var p = pool().length;
-    $("setupNote").textContent = p ? "えらんだはんいには " + p + " 問あるよ。ランダムに " + (count && count < p ? count : p) + " 問出すね。" : "はんいを1つ以上えらんでね。";
+    $("setupNote").textContent = p ? "えらんだはんいには " + p + " 問あるよ。ランダムに " + (count && count < p ? count : p) + " 問出すね。" : (mode === "photo" ? "このはんいには写真の問題がまだないよ。" : "はんいを1つ以上えらんでね。");
     $("startBtn").disabled = !p;
   }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -380,6 +412,7 @@
     synth.speak(u);
   }
   function speakQ(q) {
+    if (q.photo) { speak(q.photo.prompt.replace("？", "")); return; }
     speak(q.yomi + (voice.hint && q.hint ? "。ヒント。" + q.hint : ""));
   }
   function syncVoiceChips() {
@@ -426,7 +459,12 @@
     if (q.star) { var s = document.createElement("span"); s.className = "star"; s.textContent = "★"; $("qYomi").appendChild(s); }
     $("qYomi").appendChild(document.createTextNode(q.yomi));
     $("qHint").textContent = q.hint ? "ヒント：" + q.hint : "";
-    if (voice.hide) {
+    $("qPhoto").hidden = !q.photo; $("qYomi").classList.remove("prompt");
+    if (q.photo) {
+      $("qImg").src = q.photo.img; $("qCredit").textContent = q.photo.credit;
+      $("qYomi").textContent = q.photo.prompt; $("qYomi").classList.add("prompt");
+      $("qHint").textContent = "";
+    } else if (voice.hide) {
       $("qYomi").innerHTML = ""; $("qYomi").textContent = "？？？（よく聞いてね）"; $("qYomi").classList.add("hidden-yomi");
       $("qHint").textContent = "";
     } else { $("qYomi").classList.remove("hidden-yomi"); }
@@ -469,7 +507,10 @@
 
   $("revealBtn").addEventListener("click", function () {
     $("aKanji").textContent = quiz.list[quiz.i].kanji;
-    if (voice.hide) {
+    if (quiz.list[quiz.i].photo) {
+      var pq = quiz.list[quiz.i];
+      $("qHint").textContent = "よみ：" + pq.yomi + (pq.hint ? "　" + pq.hint : "");
+    } else if (voice.hide) {
       var rq = quiz.list[quiz.i];
       $("qYomi").classList.remove("hidden-yomi"); $("qYomi").textContent = (rq.star ? "★" : "") + rq.yomi;
       $("qHint").textContent = rq.hint ? "ヒント：" + rq.hint : "";
