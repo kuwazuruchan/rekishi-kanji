@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>html,body{margin:0}[hidden]{display:none!important}</style>
+<title>れきし漢字ドリル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+  :root {
+    --bg:#eef2f6; --surface:#ffffff; --ink:#1f2a44; --muted:#66758a; --line:#d6dee7;
+    --grid:#8fa6bd; --guide:#d3dde7; --pen:#1f2a44;
+    --accent:#2b5c8f; --accent-ink:#ffffff; --red:#c8412b; --green:#2f8f5b; --soft:#f4f7fa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg:#121821; --surface:#1b2330; --ink:#e6ecf3; --muted:#9aa8ba; --line:#2c3848;
+      --grid:#5d7188; --guide:#2b3748; --pen:#f1f5fa;
+      --accent:#6fa3d8; --accent-ink:#0f1620; --red:#ff7a62; --green:#5cc98b; --soft:#222c3a;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:#121821; --surface:#1b2330; --ink:#e6ecf3; --muted:#9aa8ba; --line:#2c3848;
+    --grid:#5d7188; --guide:#2b3748; --pen:#f1f5fa;
+    --accent:#6fa3d8; --accent-ink:#0f1620; --red:#ff7a62; --green:#5cc98b; --soft:#222c3a;
+  }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Meiryo",sans-serif; font-size:16px; }
+  .wrap { max-width:760px; margin:0 auto; padding-inline:16px; padding-block:18px 40px; display:flex; flex-direction:column; gap:16px; }
+  header { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; }
+  header h1 { margin:0; font-size:26px; letter-spacing:.04em; font-weight:700; }
+  header .unit { color:var(--muted); font-size:14px; }
+  nav { display:flex; gap:6px; border-bottom:2px solid var(--line); }
+  nav button { font:inherit; font-weight:700; background:none; border:0; padding:10px 14px; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; display:flex; gap:6px; align-items:center; }
+  nav button[aria-selected="true"] { color:var(--ink); border-bottom-color:var(--accent); }
+  nav .badge { background:var(--red); color:#fff; border-radius:999px; font-size:12px; padding:1px 8px; font-variant-numeric:tabular-nums; }
+  nav .badge:empty { display:none; }
+  .card { background:var(--surface); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:16px; }
+  h2 { margin:0; font-size:18px; }
+  .label { font-size:13px; color:var(--muted); font-weight:700; letter-spacing:.05em; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  #eraChips { display:flex; flex-direction:column; gap:14px; }
+  .unitBlock { display:flex; flex-direction:column; gap:8px; }
+  .unitHead { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:6px 8px; font-weight:700; font-size:15px; }
+  .wrap > * { min-width:0; }
+  .chip { max-width:100%; }
+  .chip { font:inherit; font-size:15px; border:2px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:7px 14px; cursor:pointer; }
+  .chip[aria-pressed="true"] { border-color:var(--accent); background:var(--accent); color:var(--accent-ink); }
+  .btn { font:inherit; font-weight:700; font-size:17px; border:0; border-radius:12px; padding:13px 22px; cursor:pointer; background:var(--accent); color:var(--accent-ink); }
+  .btn.ghost { background:var(--soft); color:var(--ink); }
+  .btn.red { background:var(--red); color:#fff; }
+  .btn.green { background:var(--green); color:#fff; }
+  .btn:disabled { opacity:.4; cursor:default; }
+  button:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .grow { flex:1 1 auto; }
+  .muted { color:var(--muted); font-size:14px; }
+
+  /* 出題 */
+  .qtop { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .progress { font-variant-numeric:tabular-nums; color:var(--muted); font-weight:700; }
+  .bar { height:6px; background:var(--soft); border-radius:3px; overflow:hidden; }
+  .bar i { display:block; height:100%; background:var(--accent); transition:width .3s; }
+  .era { font-size:13px; color:var(--muted); }
+  .yomi { font-size:34px; font-weight:700; letter-spacing:.06em; line-height:1.3; word-break:break-all; }
+  .yomi .star { color:var(--red); font-size:18px; vertical-align:middle; margin-right:4px; }
+  .hint { color:var(--muted); font-size:15px; }
+  .speak { display:inline-flex; align-items:center; gap:6px; font-size:15px; padding:8px 14px; margin-top:8px; }
+  .speak svg { width:20px; height:20px; }
+  .yomi.hidden-yomi { color:var(--muted); letter-spacing:.3em; }
+  .pad { position:relative; align-self:center; max-width:100%; }
+  .cells { display:flex; }
+  .cell { border:2px solid var(--grid); margin-left:-2px; display:grid; place-items:center; font-family:"Klee One",serif; color:var(--muted);
+    background:
+      linear-gradient(to right, transparent calc(50% - 1px), var(--guide) calc(50% - 1px), var(--guide) calc(50% + 1px), transparent calc(50% + 1px)),
+      linear-gradient(to bottom, transparent calc(50% - 1px), var(--guide) calc(50% - 1px), var(--guide) calc(50% + 1px), transparent calc(50% + 1px)),
+      var(--surface); }
+  .cell:first-child { margin-left:0; }
+  .cell.fixed { background:var(--soft); }
+  canvas { position:absolute; inset:0; touch-action:none; cursor:crosshair; }
+  .mark { position:absolute; inset:-10px; pointer-events:none; display:grid; place-items:center; }
+  .mark svg { width:auto; height:130%; overflow:visible; }
+  .answer { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .answer .k { font-family:"Klee One",serif; font-weight:600; font-size:52px; letter-spacing:.08em; line-height:1.1; text-align:center; }
+  .answer .lbl { font-size:13px; color:var(--muted); }
+  .judge { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .judge .btn { font-size:20px; padding:16px; }
+
+  /* 結果 */
+  .score { font-size:44px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .score small { font-size:18px; color:var(--muted); }
+
+  /* 一覧 */
+  .list { display:flex; flex-direction:column; }
+  .item { display:grid; grid-template-columns:1fr auto; gap:4px 12px; padding:12px 2px; border-bottom:1px solid var(--line); align-items:center; }
+  .item .k { font-family:"Klee One",serif; font-weight:600; font-size:24px; }
+  .item .y { font-size:14px; color:var(--muted); }
+  .item .meta { text-align:right; font-size:13px; color:var(--muted); font-variant-numeric:tabular-nums; display:flex; flex-direction:column; gap:4px; align-items:flex-end; }
+  .item .miss { color:var(--red); font-weight:700; }
+  .tiny { font:inherit; font-size:12px; border:1px solid var(--line); background:none; color:var(--muted); border-radius:8px; padding:3px 8px; cursor:pointer; }
+  .group { font-weight:700; margin-top:14px; padding-bottom:4px; }
+  .empty { text-align:center; padding:28px 8px; color:var(--muted); }
+  .pages { display:grid; grid-template-columns:repeat(auto-fill, minmax(34px, 1fr)); gap:4px; }
+  .pg { border:1.5px solid var(--line); border-radius:6px; text-align:center; font-size:12px; padding:5px 0; font-variant-numeric:tabular-nums; color:var(--muted); }
+  .pg.ok { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700; }
+  .pg.guess { border-color:var(--accent); color:var(--accent); font-weight:700; border-style:dashed; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--muted); align-items:center; }
+  .legend .pg { display:inline-block; width:28px; padding:1px 0; }
+  .missing { color:var(--red); font-weight:700; }
+  .status { font-size:12px; color:var(--muted); text-align:right; }
+  @media (prefers-reduced-motion: reduce) { .bar i { transition:none; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>れきし漢字ドリル</h1>
+    <span class="unit" id="unit"></span>
+  </header>
+  <nav role="tablist">
+    <button role="tab" id="tab-test" aria-selected="true">テスト</button>
+    <button role="tab" id="tab-note" aria-selected="false">まちがいノート <span class="badge" id="missCount"></span></button>
+    <button role="tab" id="tab-all" aria-selected="false">ぜんぶの問題</button>
+  </nav>
+
+  <!-- テスト：スタート -->
+  <section class="card" id="view-setup">
+    <h2>テストをはじめよう</h2>
+    <div class="label">はんい（えらんだところから出るよ）</div>
+    <div class="chips" id="eraChips"></div>
+    <div class="label">出す問題</div>
+    <div class="chips">
+      <button class="chip" id="starOnly" aria-pressed="false">★だいじな言葉だけ</button>
+    </div>
+    <div class="label" id="voiceLabel">読み上げ</div>
+    <div class="chips" id="voiceChips">
+      <button class="chip" id="vAuto" aria-pressed="true">問題を声で読む</button>
+      <button class="chip" id="vHint" aria-pressed="false">ヒントも読む</button>
+      <button class="chip" id="vHide" aria-pressed="false">よみがなをかくす（耳だけで）</button>
+    </div>
+    <div class="label">問題の数</div>
+    <div class="chips" id="countChips"></div>
+    <div class="row">
+      <button class="btn grow" id="startBtn">スタート</button>
+    </div>
+    <p class="muted" id="setupNote"></p>
+  </section>
+
+  <!-- テスト：出題 -->
+  <section class="card" id="view-quiz" hidden>
+    <div class="qtop"><span class="progress" id="prog"></span><button class="tiny" id="quitBtn">やめる</button></div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div>
+      <div class="era" id="qEra"></div>
+      <div class="yomi" id="qYomi"></div>
+      <div class="hint" id="qHint"></div>
+      <button class="btn ghost speak" id="speakBtn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>もう一回きく</button>
+    </div>
+    <div class="pad" id="pad">
+      <div class="cells" id="cells"></div>
+      <canvas id="cv"></canvas>
+      <div class="mark" id="mark" hidden></div>
+    </div>
+    <p class="muted" style="margin:0;text-align:center">マスに指やペンで漢字を書いてね</p>
+    <div class="row" id="writeBtns">
+      <button class="btn ghost" id="clearBtn">けす</button>
+      <button class="btn grow" id="revealBtn">こたえを見る</button>
+    </div>
+    <div id="answerArea" hidden>
+      <div class="answer">
+        <span class="lbl">こたえ</span>
+        <span class="k" id="aKanji"></span>
+      </div>
+    </div>
+    <div class="judge" id="judgeBtns" hidden>
+      <button class="btn green" id="okBtn">○ 書けた</button>
+      <button class="btn red" id="ngBtn">× まちがえた</button>
+    </div>
+  </section>
+
+  <!-- テスト：結果 -->
+  <section class="card" id="view-result" hidden>
+    <h2>けっか</h2>
+    <div class="score" id="score"></div>
+    <div id="resultMsg" class="muted"></div>
+    <div class="list" id="resultList"></div>
+    <div class="row">
+      <button class="btn grow" id="retryWrongBtn">まちがえた問題だけもう一回</button>
+      <button class="btn ghost" id="backBtn">さいしょにもどる</button>
+    </div>
+  </section>
+
+  <!-- まちがいノート -->
+  <section class="card" id="view-note" hidden>
+    <div class="row">
+      <h2 class="grow">まちがいノート</h2>
+      <button class="btn" id="noteTestBtn">まちがいだけテスト</button>
+    </div>
+    <p class="muted" style="margin:0">まちがえた問題がたまるよ。まちがいだけテストで<b>2回つづけて書けたら卒業</b>して、ノートから消えるよ。</p>
+    <div class="list" id="noteList"></div>
+  </section>
+
+  <!-- ぜんぶ -->
+  <section class="card" id="view-all" hidden>
+    <h2>読みこんだページ</h2>
+    <div class="pages" id="pageGrid"></div>
+    <div class="legend"><span><span class="pg ok">5</span> 読みこみ済み</span><span><span class="pg guess">3</span> 読みこみ済み（ページ番号は推定）</span><span><span class="pg">18</span> まだ</span></div>
+    <p style="margin:0" id="missingText"></p>
+    <h2 style="margin-top:10px">ぜんぶの問題</h2>
+    <p class="muted" style="margin:0">★はテキストの【 】に書きこむ、だいじな言葉。</p>
+    <div id="allList"></div>
+  </section>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script src="kanji_data.js"></script>
+<script>
+(function () {
+  "use strict";
+  var DATA = window.KANJI_DATA || [];
+  var GRADUATE = 2;           // まちがいノートを卒業するのに必要な連続正解
+  var LS_KEY = "rekishi-kanji-progress-v1";
+  var $ = function (id) { return document.getElementById(id); };
+  var isKanji = function (c) { return /[一-鿿々]/.test(c); };
+
+  var ALL = [];
+  DATA.forEach(function (g) {
+    g.items.forEach(function (it) { ALL.push({ id: it[1], page: it[4] || "", unit: g.unit || "", era: g.era, yomi: it[0], kanji: it[1], hint: it[2] || "", star: !!it[3] }); });
+  });
+  var BY_ID = {}; ALL.forEach(function (q) { BY_ID[q.id] = q; });
+  $("unit").textContent = window.KANJI_UNIT || "";
+
+  /* ---------- 記録の保存 ---------- */
+  var state = { miss: {}, graduated: 0, answered: 0, correct: 0 };
+  function normalize(s) {
+    return { miss: (s && s.miss) || {}, graduated: (s && s.graduated) || 0, answered: (s && s.answered) || 0, correct: (s && s.correct) || 0 };
+  }
+  function readLocal() { try { var r = localStorage.getItem(LS_KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
+  function writeLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) { /* 保存できない環境 */ } }
+  function save() { writeLocal(); }
+  function setStatus(t) { $("status").textContent = t; }
+
+  var local = readLocal();
+  if (local) state = normalize(local);
+  setStatus("記録はこの端末のブラウザに保存されます（ほかの端末とは別々）");
+
+  function recordAnswer(q, ok) {
+    state = JSON.parse(JSON.stringify(state));
+    state.answered += 1;
+    if (ok) state.correct += 1;
+    var m = state.miss[q.id];
+    if (!ok) {
+      state.miss[q.id] = { n: (m ? m.n : 0) + 1, ok: 0, last: Date.now() };
+    } else if (m && quiz.fromNote) {
+      var streak = m.ok + 1;
+      if (streak >= GRADUATE) { delete state.miss[q.id]; state.graduated += 1; }
+      else state.miss[q.id] = { n: m.n, ok: streak, last: m.last };
+    }
+    save(); refreshBadges();
+  }
+
+  /* ---------- タブ ---------- */
+  var currentTab = "test";
+  var tabs = { test: $("tab-test"), note: $("tab-note"), all: $("tab-all") };
+  var views = ["view-setup", "view-quiz", "view-result", "view-note", "view-all"];
+  function show(id) { views.forEach(function (v) { $(v).hidden = v !== id; }); }
+  function setTab(name) {
+    currentTab = name;
+    Object.keys(tabs).forEach(function (k) { tabs[k].setAttribute("aria-selected", String(k === name)); });
+    if (name === "test") show(quiz.active ? "view-quiz" : "view-setup");
+    if (name === "note") { renderNote(); show("view-note"); }
+    if (name === "all") { renderAll(); show("view-all"); }
+  }
+  Object.keys(tabs).forEach(function (k) { tabs[k].addEventListener("click", function () { setTab(k); }); });
+  function refreshBadges() { var n = Object.keys(state.miss).length; $("missCount").textContent = n ? String(n) : ""; }
+
+  /* ---------- スタート画面 ---------- */
+  var selEras = {}; DATA.forEach(function (g) { selEras[g.era] = true; });
+  var count = 10;
+  var UNITS = [];
+  DATA.forEach(function (g) { if (UNITS.indexOf(g.unit) < 0) UNITS.push(g.unit); });
+  UNITS.forEach(function (u) {
+    var block = document.createElement("div"); block.className = "unitBlock";
+    var head = document.createElement("div"); head.className = "unitHead";
+    var first = DATA.filter(function (g) { return g.unit === u; })[0];
+    var name = document.createElement("span"); name.textContent = u + (first.pages ? "（" + first.pages + "）" : "");
+    var all = document.createElement("button"); all.className = "tiny"; all.textContent = "この回をぜんぶ / はずす";
+    head.appendChild(name); head.appendChild(all); block.appendChild(head);
+    var chips = document.createElement("div"); chips.className = "chips";
+    var mine = [];
+    DATA.filter(function (g) { return g.unit === u; }).forEach(function (g) {
+      var b = document.createElement("button");
+      b.className = "chip"; b.textContent = g.era + "（" + g.items.length + "）";
+      b.setAttribute("aria-pressed", "true");
+      b.addEventListener("click", function () { selEras[g.era] = !selEras[g.era]; b.setAttribute("aria-pressed", String(selEras[g.era])); updateSetupNote(); });
+      mine.push({ g: g, b: b }); chips.appendChild(b);
+    });
+    all.addEventListener("click", function () {
+      var on = !mine.every(function (m) { return selEras[m.g.era]; });
+      mine.forEach(function (m) { selEras[m.g.era] = on; m.b.setAttribute("aria-pressed", String(on)); });
+      updateSetupNote();
+    });
+    block.appendChild(chips); $("eraChips").appendChild(block);
+  });
+  [10, 20, 0].forEach(function (n) {
+    var b = document.createElement("button");
+    b.className = "chip"; b.textContent = n ? n + "問" : "ぜんぶ"; b.dataset.n = n;
+    b.setAttribute("aria-pressed", String(n === count));
+    b.addEventListener("click", function () {
+      count = n; $("countChips").querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(+c.dataset.n === n)); }); updateSetupNote();
+    });
+    $("countChips").appendChild(b);
+  });
+  $("starOnly").addEventListener("click", function () {
+    var on = $("starOnly").getAttribute("aria-pressed") !== "true";
+    $("starOnly").setAttribute("aria-pressed", String(on)); updateSetupNote();
+  });
+  function pool() {
+    var starOnly = $("starOnly").getAttribute("aria-pressed") === "true";
+    return ALL.filter(function (q) { return selEras[q.era] && (!starOnly || q.star); });
+  }
+  function updateSetupNote() {
+    var p = pool().length;
+    $("setupNote").textContent = p ? "えらんだはんいには " + p + " 問あるよ。ランダムに " + (count && count < p ? count : p) + " 問出すね。" : "はんいを1つ以上えらんでね。";
+    $("startBtn").disabled = !p;
+  }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  /* ---------- 読み上げ ---------- */
+  var VOICE_KEY = "rekishi-kanji-voice-v1";
+  var synth = window.speechSynthesis || null;
+  var voice = { auto: true, hint: false, hide: false };
+  try { var vs = JSON.parse(localStorage.getItem(VOICE_KEY) || "null"); if (vs) voice = { auto: !!vs.auto, hint: !!vs.hint, hide: !!vs.hide }; } catch (e) { /* 読めない環境 */ }
+  function jaVoice() {
+    if (!synth) return null;
+    var list = synth.getVoices().filter(function (v) { return /^ja/i.test(v.lang); });
+    return list.filter(function (v) { return /Google|Kyoko|Nanami|Haruka/i.test(v.name); })[0] || list[0] || null;
+  }
+  function speak(text) {
+    if (!synth || !text) return;
+    synth.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP"; u.rate = 0.85;
+    var v = jaVoice(); if (v) u.voice = v;
+    synth.speak(u);
+  }
+  function speakQ(q) {
+    speak(q.yomi + (voice.hint && q.hint ? "。ヒント。" + q.hint : ""));
+  }
+  function syncVoiceChips() {
+    $("vAuto").setAttribute("aria-pressed", String(voice.auto));
+    $("vHint").setAttribute("aria-pressed", String(voice.hint));
+    $("vHide").setAttribute("aria-pressed", String(voice.hide));
+    try { localStorage.setItem(VOICE_KEY, JSON.stringify(voice)); } catch (e) { /* 保存できない環境 */ }
+  }
+  if (!synth) { $("voiceLabel").hidden = true; $("voiceChips").hidden = true; voice = { auto: false, hint: false, hide: false }; }
+  else {
+    ["auto", "hint", "hide"].forEach(function (k) {
+      var id = { auto: "vAuto", hint: "vHint", hide: "vHide" }[k];
+      $(id).addEventListener("click", function () {
+        voice[k] = !voice[k];
+        if (k === "hide" && voice.hide) voice.auto = true;
+        if (k === "auto" && !voice.auto) voice.hide = false;
+        syncVoiceChips();
+      });
+    });
+    syncVoiceChips();
+    synth.getVoices();
+  }
+  $("speakBtn").addEventListener("click", function () { speakQ(quiz.list[quiz.i]); });
+
+  /* ---------- 出題 ---------- */
+  var quiz = { active: false, list: [], i: 0, wrong: [], right: 0, fromNote: false };
+  function startQuiz(list, fromNote) {
+    if (!list.length) return;
+    quiz = { active: true, list: list, i: 0, wrong: [], right: 0, fromNote: !!fromNote };
+    setTab("test"); show("view-quiz"); renderQ();
+  }
+  $("startBtn").addEventListener("click", function () {
+    var p = shuffle(pool()); startQuiz(count ? p.slice(0, count) : p, false);
+  });
+  $("quitBtn").addEventListener("click", function () { if (synth) synth.cancel(); quiz.active = false; show("view-setup"); });
+
+  var cv = $("cv"), ctx = cv.getContext("2d"), cellSize = 64;
+  function renderQ() {
+    var q = quiz.list[quiz.i];
+    $("prog").textContent = (quiz.i + 1) + " / " + quiz.list.length + (quiz.fromNote ? "　まちがいノート" : "");
+    $("barFill").style.width = (quiz.i / quiz.list.length * 100) + "%";
+    $("qEra").textContent = (q.unit ? q.unit + "　" : "") + q.era + (q.page ? "　テキスト p." + q.page : "");
+    $("qYomi").innerHTML = "";
+    if (q.star) { var s = document.createElement("span"); s.className = "star"; s.textContent = "★"; $("qYomi").appendChild(s); }
+    $("qYomi").appendChild(document.createTextNode(q.yomi));
+    $("qHint").textContent = q.hint ? "ヒント：" + q.hint : "";
+    if (voice.hide) {
+      $("qYomi").innerHTML = ""; $("qYomi").textContent = "？？？（よく聞いてね）"; $("qYomi").classList.add("hidden-yomi");
+      $("qHint").textContent = "";
+    } else { $("qYomi").classList.remove("hidden-yomi"); }
+    $("speakBtn").hidden = !synth;
+    if (voice.auto) speakQ(q);
+    var chars = Array.from(q.kanji);
+    var avail = Math.min($("pad").parentElement.clientWidth - 40, 720);
+    cellSize = Math.max(40, Math.min(96, Math.floor((avail + 2 * (chars.length - 1)) / chars.length)));
+    var cells = $("cells"); cells.innerHTML = "";
+    chars.forEach(function (c) {
+      var d = document.createElement("div");
+      d.className = "cell" + (isKanji(c) ? "" : " fixed");
+      d.style.width = d.style.height = cellSize + "px";
+      d.style.fontSize = Math.round(cellSize * (isKanji(c) ? .8 : .55)) + "px";
+      if (!isKanji(c)) d.textContent = c;
+      cells.appendChild(d);
+    });
+    var w = chars.length * cellSize - 2 * (chars.length - 1), dpr = window.devicePixelRatio || 1;
+    $("pad").style.width = w + "px"; $("pad").style.height = cellSize + "px";
+    cv.width = w * dpr; cv.height = cellSize * dpr; cv.style.width = w + "px"; cv.style.height = cellSize + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(3, cellSize * 0.065);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--pen").trim() || "#1f2a44";
+    $("mark").hidden = true; $("answerArea").hidden = true; $("judgeBtns").hidden = true; $("writeBtns").hidden = false;
+  }
+
+  var drawing = false, last = null;
+  function pt(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  cv.addEventListener("pointerdown", function (e) { drawing = true; last = pt(e); cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.arc(last.x, last.y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); });
+  cv.addEventListener("pointermove", function (e) { if (!drawing) return; var p = pt(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p; });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) { cv.addEventListener(t, function () { drawing = false; }); });
+  $("clearBtn").addEventListener("click", function () { ctx.clearRect(0, 0, cv.width, cv.height); });
+
+  $("revealBtn").addEventListener("click", function () {
+    $("aKanji").textContent = quiz.list[quiz.i].kanji;
+    if (voice.hide) {
+      var rq = quiz.list[quiz.i];
+      $("qYomi").classList.remove("hidden-yomi"); $("qYomi").textContent = (rq.star ? "★" : "") + rq.yomi;
+      $("qHint").textContent = rq.hint ? "ヒント：" + rq.hint : "";
+    }
+    $("answerArea").hidden = false; $("judgeBtns").hidden = false; $("writeBtns").hidden = true;
+  });
+
+  function showMark(ok) {
+    var red = getComputedStyle(document.documentElement).getPropertyValue("--red").trim();
+    $("mark").innerHTML = ok
+      ? '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="' + red + '" stroke-width="7" opacity=".85"/></svg>'
+      : '<svg viewBox="0 0 100 100"><path d="M22 22 L78 78 M78 22 L22 78" fill="none" stroke="' + red + '" stroke-width="7" stroke-linecap="round" opacity=".85"/></svg>';
+    $("mark").hidden = false;
+  }
+  function judge(ok) {
+    var q = quiz.list[quiz.i];
+    $("okBtn").disabled = $("ngBtn").disabled = true;
+    recordAnswer(q, ok);
+    if (ok) quiz.right += 1; else quiz.wrong.push(q);
+    showMark(ok);
+    setTimeout(function () {
+      $("okBtn").disabled = $("ngBtn").disabled = false;
+      quiz.i += 1;
+      if (quiz.i < quiz.list.length) renderQ(); else finish();
+    }, 650);
+  }
+  $("okBtn").addEventListener("click", function () { judge(true); });
+  $("ngBtn").addEventListener("click", function () { judge(false); });
+
+  function finish() {
+    quiz.active = false;
+    var total = quiz.list.length, r = quiz.right;
+    $("score").innerHTML = r + "<small> / " + total + " 問 せいかい</small>";
+    $("resultMsg").textContent = r === total ? "ぜんぶ書けたね！すごい！" :
+      "まちがえた " + quiz.wrong.length + " 問は、まちがいノートに入れたよ。";
+    var list = $("resultList"); list.innerHTML = "";
+    quiz.wrong.forEach(function (q) { list.appendChild(itemEl(q, "")); });
+    $("retryWrongBtn").hidden = !quiz.wrong.length;
+    show("view-result");
+  }
+  $("retryWrongBtn").addEventListener("click", function () { startQuiz(shuffle(quiz.wrong), quiz.fromNote); });
+  $("backBtn").addEventListener("click", function () { show("view-setup"); });
+
+  /* ---------- 一覧 ---------- */
+  function itemEl(q, metaHtml, onRemove) {
+    var d = document.createElement("div"); d.className = "item";
+    var left = document.createElement("div");
+    var k = document.createElement("div"); k.className = "k"; k.textContent = (q.star ? "★" : "") + q.kanji;
+    var y = document.createElement("div"); y.className = "y"; y.textContent = q.yomi + (q.hint ? "　" + q.hint : "") + (q.page ? "　p." + q.page : "");
+    left.appendChild(k); left.appendChild(y);
+    var right = document.createElement("div"); right.className = "meta"; right.innerHTML = metaHtml;
+    if (onRemove) {
+      var b = document.createElement("button"); b.className = "tiny"; b.textContent = "もう覚えた";
+      b.addEventListener("click", onRemove); right.appendChild(b);
+    }
+    d.appendChild(left); d.appendChild(right);
+    return d;
+  }
+  function noteItems() {
+    return Object.keys(state.miss).filter(function (id) { return BY_ID[id]; })
+      .sort(function (a, b) { return state.miss[b].n - state.miss[a].n || state.miss[b].last - state.miss[a].last; });
+  }
+  function renderNote() {
+    var ids = noteItems(), list = $("noteList"); list.innerHTML = "";
+    $("noteTestBtn").disabled = !ids.length;
+    if (!ids.length) {
+      list.innerHTML = '<div class="empty">まちがいノートはからっぽ。<br>卒業した問題：' + state.graduated + ' 問</div>';
+      return;
+    }
+    ids.forEach(function (id) {
+      var m = state.miss[id];
+      list.appendChild(itemEl(BY_ID[id],
+        '<span class="miss">× ' + m.n + ' 回</span><span>卒業まで あと ' + (GRADUATE - m.ok) + ' 回</span>',
+        function () {
+          state = JSON.parse(JSON.stringify(state)); delete state.miss[id]; state.graduated += 1;
+          save(); refreshBadges(); renderNote();
+        }));
+    });
+    var foot = document.createElement("div"); foot.className = "empty"; foot.style.padding = "14px 0 0";
+    foot.textContent = "卒業した問題：" + state.graduated + " 問"; list.appendChild(foot);
+  }
+  $("noteTestBtn").addEventListener("click", function () {
+    startQuiz(shuffle(noteItems().map(function (id) { return BY_ID[id]; })), true);
+  });
+  function renderPages() {
+    var pages = window.KANJI_PAGES || [], last = window.KANJI_LAST_PAGE || 0, map = {};
+    pages.forEach(function (x) { map[x.p] = x; });
+    var grid = $("pageGrid"); grid.innerHTML = "";
+    for (var p = 1; p <= last; p++) {
+      var d = document.createElement("div"), x = map[p];
+      d.className = "pg" + (x ? (x.sure ? " ok" : " guess") : "");
+      d.textContent = p;
+      d.title = x ? x.img + "：" + x.note : "まだ読みこんでいません";
+      grid.appendChild(d);
+    }
+    var miss = window.KANJI_MISSING || [];
+    $("missingText").innerHTML = "";
+    var t = document.createElement("span");
+    t.textContent = "読みこみ済み " + pages.length + " / " + last + " ページ。";
+    $("missingText").appendChild(t);
+    if (miss.length) {
+      var m = document.createElement("span"); m.className = "missing";
+      m.textContent = "まだ：" + miss.join("、"); $("missingText").appendChild(m);
+    }
+  }
+  function renderAll() {
+    renderPages();
+    var box = $("allList"); box.innerHTML = "";
+    var lastUnit = null;
+    DATA.forEach(function (g) {
+      if (g.unit !== lastUnit) {
+        lastUnit = g.unit;
+        var uh = document.createElement("h2"); uh.style.marginTop = "22px"; uh.textContent = g.unit + (g.pages ? "（" + g.pages + "）" : ""); box.appendChild(uh);
+      }
+      var h = document.createElement("div"); h.className = "group"; h.textContent = g.era + "（" + g.items.length + "問）"; box.appendChild(h);
+      var list = document.createElement("div"); list.className = "list";
+      ALL.filter(function (q) { return q.era === g.era; }).forEach(function (q) {
+        var m = state.miss[q.id];
+        list.appendChild(itemEl(q, m ? '<span class="miss">ノートに入っている</span>' : ""));
+      });
+      box.appendChild(list);
+    });
+  }
+
+  refreshBadges(); updateSetupNote();
+})();
+</script>
+
+</body>
+</html>
