@@ -88,11 +88,19 @@
   canvas { position:absolute; inset:0; touch-action:none; cursor:crosshair; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   button { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
   .pad, .cells { -webkit-user-select:none; user-select:none; }
-  .mark { position:absolute; inset:-10px; pointer-events:none; display:grid; place-items:center; }
-  .mark svg { width:auto; height:130%; overflow:visible; }
+  .mark { position:absolute; top:-14px; bottom:-14px; left:50%; transform:translateX(-50%); aspect-ratio:1; pointer-events:none; }
+  .mark svg { display:block; width:100%; height:100%; overflow:visible; }
   .answer { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .answer .k { font-family:"Klee One",serif; font-weight:600; font-size:52px; letter-spacing:.08em; line-height:1.1; text-align:center; }
   .answer .lbl { font-size:13px; color:var(--muted); }
+  .cellres { display:flex; align-self:center; }
+  .cellres div { text-align:center; font-family:"Klee One",serif; font-weight:600; line-height:1.2; margin-left:-2px; font-size:14px; }
+  .cellres div:first-child { margin-left:0; }
+  .cellres b { display:block; font-size:22px; }
+  .cellres .ok { color:var(--green); }
+  .cellres .ng { color:var(--red); }
+  .automsg { text-align:center; font-size:20px; font-weight:700; margin:0 0 10px; }
+  #writeBtns .tiny { flex-basis:100%; padding:8px; }
   .judge { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .judge .btn { font-size:20px; padding:16px; }
 
@@ -144,6 +152,11 @@
     <div class="chips">
       <button class="chip" id="starOnly" aria-pressed="false">★だいじな言葉だけ</button>
     </div>
+    <div class="label">採点のきびしさ（書いた字をコンピューターが読み取って採点）</div>
+    <div class="chips">
+      <button class="chip" id="gNormal" aria-pressed="true">ふつう</button>
+      <button class="chip" id="gStrict" aria-pressed="false">きびしめ</button>
+    </div>
     <div class="label" id="voiceLabel">読み上げ</div>
     <div class="chips" id="voiceChips">
       <button class="chip" id="vAuto" aria-pressed="true">問題を声で読む</button>
@@ -174,14 +187,23 @@
       <div class="mark" id="mark" hidden></div>
     </div>
     <p class="muted" style="margin:0;text-align:center">マスに指やペンで漢字を書いてね</p>
+    <div class="cellres" id="cellRes" hidden></div>
     <div class="row" id="writeBtns">
       <button class="btn ghost" id="clearBtn">けす</button>
-      <button class="btn grow" id="revealBtn">こたえを見る</button>
+      <button class="btn grow" id="gradeBtn">採点する</button>
+      <button class="tiny" id="revealBtn">こたえを見て自分で○×</button>
     </div>
     <div id="answerArea" hidden>
       <div class="answer">
         <span class="lbl">こたえ</span>
         <span class="k" id="aKanji"></span>
+      </div>
+    </div>
+    <div id="autoRes" hidden>
+      <p class="automsg" id="autoMsg"></p>
+      <div class="judge">
+        <button class="btn" id="nextBtn">つぎへ</button>
+        <button class="btn ghost" id="flipBtn">判定をなおす</button>
       </div>
     </div>
     <div class="judge" id="judgeBtns" hidden>
@@ -429,17 +451,21 @@
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.lineWidth = Math.max(3, cellSize * 0.065);
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--pen").trim() || "#1f2a44";
+    Array.prototype.slice.call($("answerArea").querySelectorAll("p.muted")).forEach(function (n) { n.remove(); });
+    strokes = []; $("cellRes").hidden = true; $("autoRes").hidden = true;
+    $("gradeBtn").disabled = false; $("gradeBtn").textContent = "採点する";
     $("mark").hidden = true; $("answerArea").hidden = true; $("judgeBtns").hidden = true; $("writeBtns").hidden = false;
   }
 
-  var drawing = false, last = null;
+  var drawing = false, last = null, strokes = [];
   function pt(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   var penSeen = false; // Apple Pencil を使ったら、指や手のひらのタッチは線にしない
   function ignore(e) { if (e.pointerType === "pen") penSeen = true; return penSeen && e.pointerType === "touch"; }
-  cv.addEventListener("pointerdown", function (e) { if (ignore(e)) return; e.preventDefault(); drawing = true; last = pt(e); cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.arc(last.x, last.y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); });
-  cv.addEventListener("pointermove", function (e) { if (!drawing || ignore(e)) return; var p = pt(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p; });
+  cv.addEventListener("pointerdown", function (e) { if (ignore(e)) return; e.preventDefault(); drawing = true; last = pt(e); strokes.push({ x: [Math.round(last.x)], y: [Math.round(last.y)], t: [Date.now()] }); cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.arc(last.x, last.y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); });
+  cv.addEventListener("pointermove", function (e) { if (!drawing || ignore(e)) return; var p = pt(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p;
+    var st = strokes[strokes.length - 1]; if (st) { st.x.push(Math.round(p.x)); st.y.push(Math.round(p.y)); st.t.push(Date.now()); } });
   ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) { cv.addEventListener(t, function () { drawing = false; }); });
-  $("clearBtn").addEventListener("click", function () { ctx.clearRect(0, 0, cv.width, cv.height); });
+  $("clearBtn").addEventListener("click", function () { ctx.clearRect(0, 0, cv.width, cv.height); strokes = []; $("gradeBtn").textContent = "採点する"; });
 
   $("revealBtn").addEventListener("click", function () {
     $("aKanji").textContent = quiz.list[quiz.i].kanji;
@@ -451,6 +477,83 @@
     $("answerArea").hidden = false; $("judgeBtns").hidden = false; $("writeBtns").hidden = true;
   });
 
+  /* ---------- 自動採点（Googleの手書き文字認識） ---------- */
+  var GRADE_KEY = "rekishi-kanji-grade-v1";
+  var strict = false;
+  try { strict = localStorage.getItem(GRADE_KEY) === "strict"; } catch (e) { /* 読めない環境 */ }
+  function syncGrade() {
+    $("gNormal").setAttribute("aria-pressed", String(!strict)); $("gStrict").setAttribute("aria-pressed", String(strict));
+    try { localStorage.setItem(GRADE_KEY, strict ? "strict" : "normal"); } catch (e) { /* 保存できない環境 */ }
+  }
+  $("gNormal").addEventListener("click", function () { strict = false; syncGrade(); });
+  $("gStrict").addEventListener("click", function () { strict = true; syncGrade(); });
+  syncGrade();
+
+  function recognize(ink, size) {
+    var ctrl = new AbortController(); var timer = setTimeout(function () { ctrl.abort(); }, 8000);
+    return fetch("https://inputtools.google.com/request?ime=handwriting&app=mobilesearch&cs=1&oe=UTF-8", {
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: ctrl.signal,
+      body: JSON.stringify({ requests: [{ writing_guide: { writing_area_width: size, writing_area_height: size }, ink: ink, language: "ja" }] })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      clearTimeout(timer);
+      if (j[0] !== "SUCCESS") throw new Error("recognize failed");
+      return j[1][0][1] || [];
+    });
+  }
+  function gradeCells(q) {
+    var chars = Array.from(q.kanji), step = cellSize - 2;
+    return Promise.all(chars.map(function (c, i) {
+      if (!isKanji(c)) return Promise.resolve({ fixed: true, c: c });
+      var left = i * step;
+      var mine = strokes.filter(function (st) {
+        var cx = st.x.reduce(function (a, b) { return a + b; }, 0) / st.x.length;
+        return (cx >= left && cx < left + step) || (i === chars.length - 1 && cx >= left);
+      });
+      if (!mine.length) return Promise.resolve({ c: c, got: "", ok: false });
+      var ink = mine.map(function (st) { return [st.x.map(function (v) { return v - left; }), st.y, st.t]; });
+      return recognize(ink, cellSize).then(function (cands) {
+        var top = strict ? cands.slice(0, 1) : cands.slice(0, 3);
+        return { c: c, got: cands[0] || "?", ok: top.indexOf(c) >= 0 };
+      });
+    }));
+  }
+  var autoVerdict = null;
+  function showAuto(ok) {
+    autoVerdict = ok;
+    $("autoMsg").textContent = ok ? "○ せいかい！" : "× おしい！こたえを見てね";
+    $("autoMsg").style.color = ok ? "var(--green)" : "var(--red)";
+    showMark(ok);
+  }
+  $("gradeBtn").addEventListener("click", function () {
+    var q = quiz.list[quiz.i];
+    if (!strokes.length) { $("gradeBtn").textContent = "まずマスに書いてね"; return; }
+    $("gradeBtn").disabled = true; $("gradeBtn").textContent = "よみとり中…";
+    gradeCells(q).then(function (res) {
+      var box = $("cellRes"); box.innerHTML = "";
+      res.forEach(function (r) {
+        var d = document.createElement("div"); d.style.width = cellSize + "px";
+        if (!r.fixed) {
+          d.className = r.ok ? "ok" : "ng";
+          var b = document.createElement("b"); b.textContent = r.ok ? "○" : "×";
+          d.appendChild(b); d.appendChild(document.createTextNode(r.got ? "「" + r.got + "」" : "（空）"));
+        }
+        box.appendChild(d);
+      });
+      box.hidden = false;
+      $("revealBtn").click();
+      $("judgeBtns").hidden = true;
+      $("autoRes").hidden = false;
+      showAuto(res.every(function (r) { return r.fixed || r.ok; }));
+    }).catch(function () {
+      $("revealBtn").click();
+      var note = document.createElement("p"); note.className = "muted"; note.style.textAlign = "center";
+      note.textContent = "うまく読み取れなかったので、自分で○×をつけてね";
+      $("answerArea").appendChild(note);
+    });
+  });
+  $("nextBtn").addEventListener("click", function () { $("autoRes").hidden = true; judge(autoVerdict, true); });
+  $("flipBtn").addEventListener("click", function () { showAuto(!autoVerdict); });
+
   function showMark(ok) {
     var red = getComputedStyle(document.documentElement).getPropertyValue("--red").trim();
     $("mark").innerHTML = ok
@@ -458,7 +561,7 @@
       : '<svg viewBox="0 0 100 100"><path d="M22 22 L78 78 M78 22 L22 78" fill="none" stroke="' + red + '" stroke-width="7" stroke-linecap="round" opacity=".85"/></svg>';
     $("mark").hidden = false;
   }
-  function judge(ok) {
+  function judge(ok, quick) {
     var q = quiz.list[quiz.i];
     $("okBtn").disabled = $("ngBtn").disabled = true;
     recordAnswer(q, ok);
@@ -468,7 +571,7 @@
       $("okBtn").disabled = $("ngBtn").disabled = false;
       quiz.i += 1;
       if (quiz.i < quiz.list.length) renderQ(); else finish();
-    }, 650);
+    }, quick ? 150 : 650);
   }
   $("okBtn").addEventListener("click", function () { judge(true); });
   $("ngBtn").addEventListener("click", function () { judge(false); });
