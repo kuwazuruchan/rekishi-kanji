@@ -651,6 +651,10 @@
       var m = document.createElement("span"); m.className = "missing";
       m.textContent = "まだ：" + miss.join("、"); $("missingText").appendChild(m);
     }
+    (window.KANJI_UNKNOWN_PAGES || []).forEach(function (u) {
+      var x = document.createElement("div"); x.className = "muted";
+      x.textContent = "ページ番号不明：" + u.img + "（" + u.note + "）"; $("missingText").appendChild(x);
+    });
   }
   function renderAll() {
     renderPages();
