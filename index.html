@@ -80,14 +80,18 @@
   .speak { display:inline-flex; align-items:center; gap:6px; font-size:15px; padding:8px 14px; margin-top:8px; }
   .speak svg { width:20px; height:20px; }
   .yomi.hidden-yomi { color:var(--muted); letter-spacing:.3em; }
-  .pad { position:relative; align-self:center; max-width:100%; }
-  .cells { display:flex; }
+  .padzone { touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    display:flex; flex-direction:column; align-items:center; gap:10px; padding:14px 0 28px; margin-inline:-20px; background:var(--soft); border-radius:12px; }
+  .padnote { margin:0; text-align:center; }
+  .pad { position:relative; max-width:100%; }
+  .cells { display:grid; }
+  body.inking button { pointer-events:none; }
   .cell { border:2px solid var(--grid); margin-left:-2px; display:grid; place-items:center; font-family:"Klee One",serif; color:var(--muted);
     background:
       linear-gradient(to right, transparent calc(50% - 1px), var(--guide) calc(50% - 1px), var(--guide) calc(50% + 1px), transparent calc(50% + 1px)),
       linear-gradient(to bottom, transparent calc(50% - 1px), var(--guide) calc(50% - 1px), var(--guide) calc(50% + 1px), transparent calc(50% + 1px)),
       var(--surface); }
-  .cell:first-child { margin-left:0; }
+  .cell { margin:0 !important; }
   .cell.fixed { background:var(--soft); }
   canvas { position:absolute; inset:0; touch-action:none; cursor:crosshair; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   button { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
@@ -97,9 +101,9 @@
   .answer { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .answer .k { font-family:"Klee One",serif; font-weight:600; font-size:52px; letter-spacing:.08em; line-height:1.1; text-align:center; }
   .answer .lbl { font-size:13px; color:var(--muted); }
-  .cellres { display:flex; align-self:center; }
+  .cellres { display:grid; align-self:center; }
   .cellres div { text-align:center; font-family:"Klee One",serif; font-weight:600; line-height:1.2; margin-left:-2px; font-size:14px; }
-  .cellres div:first-child { margin-left:0; }
+  .cellres div { margin:0 !important; }
   .cellres b { display:block; font-size:22px; }
   .cellres .ok { color:var(--green); }
   .cellres .ng { color:var(--red); }
@@ -195,18 +199,20 @@
       <div class="hint" id="qHint"></div>
       <button class="btn ghost speak" id="speakBtn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>もう一回きく</button>
     </div>
-    <div class="pad" id="pad">
-      <div class="cells" id="cells"></div>
-      <canvas id="cv"></canvas>
-      <div class="mark" id="mark" hidden></div>
-    </div>
-    <p class="muted" style="margin:0;text-align:center">マスに指やペンで漢字を書いてね</p>
-    <div class="cellres" id="cellRes" hidden></div>
     <div class="row" id="writeBtns">
       <button class="btn ghost" id="clearBtn">けす</button>
       <button class="btn grow" id="gradeBtn">採点する</button>
       <button class="tiny" id="revealBtn">こたえを見て自分で○×</button>
     </div>
+    <div class="padzone" id="padzone">
+      <div class="pad" id="pad">
+        <div class="cells" id="cells"></div>
+        <canvas id="cv"></canvas>
+        <div class="mark" id="mark" hidden></div>
+      </div>
+      <p class="muted padnote">マスに指やペンで漢字を書いてね（手をおいても大丈夫）</p>
+    </div>
+    <div class="cellres" id="cellRes" hidden></div>
     <div id="answerArea" hidden>
       <div class="answer">
         <span class="lbl">こたえ</span>
@@ -449,7 +455,7 @@
   });
   $("quitBtn").addEventListener("click", function () { if (synth) synth.cancel(); quiz.active = false; show("view-setup"); });
 
-  var cv = $("cv"), ctx = cv.getContext("2d"), cellSize = 64;
+  var cv = $("cv"), ctx = cv.getContext("2d"), cellSize = 64, perRow = 1;
   function renderQ() {
     var q = quiz.list[quiz.i];
     $("prog").textContent = (quiz.i + 1) + " / " + quiz.list.length + (quiz.fromNote ? "　まちがいノート" : "");
@@ -471,9 +477,15 @@
     $("speakBtn").hidden = !synth;
     if (voice.auto) speakQ(q);
     var chars = Array.from(q.kanji);
-    var avail = Math.min($("pad").parentElement.clientWidth - 40, 720);
-    cellSize = Math.max(40, Math.min(96, Math.floor((avail + 2 * (chars.length - 1)) / chars.length)));
+    var avail = Math.min($("padzone").clientWidth - 24, 900);
+    var MIN = 110, MAX = 190;
+    perRow = chars.length;
+    while (perRow > 1 && avail / perRow < MIN) perRow = Math.ceil(chars.length / (Math.ceil(chars.length / perRow) + 1));
+    var rows = Math.ceil(chars.length / perRow);
+    cellSize = Math.max(56, Math.min(MAX, Math.floor(avail / perRow)));
     var cells = $("cells"); cells.innerHTML = "";
+    cells.style.gridTemplateColumns = "repeat(" + perRow + ", " + cellSize + "px)";
+    $("cellRes").style.gridTemplateColumns = "repeat(" + perRow + ", " + cellSize + "px)";
     chars.forEach(function (c) {
       var d = document.createElement("div");
       d.className = "cell" + (isKanji(c) ? "" : " fixed");
@@ -482,12 +494,12 @@
       if (!isKanji(c)) d.textContent = c;
       cells.appendChild(d);
     });
-    var w = chars.length * cellSize - 2 * (chars.length - 1), dpr = window.devicePixelRatio || 1;
-    $("pad").style.width = w + "px"; $("pad").style.height = cellSize + "px";
-    cv.width = w * dpr; cv.height = cellSize * dpr; cv.style.width = w + "px"; cv.style.height = cellSize + "px";
+    var w = perRow * cellSize, h = rows * cellSize, dpr = window.devicePixelRatio || 1;
+    $("pad").style.width = w + "px"; $("pad").style.height = h + "px";
+    cv.width = w * dpr; cv.height = h * dpr; cv.style.width = w + "px"; cv.style.height = h + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.lineWidth = Math.max(3, cellSize * 0.065);
+    ctx.lineWidth = Math.max(4, cellSize * 0.055);
     ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--pen").trim() || "#1f2a44";
     Array.prototype.slice.call($("answerArea").querySelectorAll("p.muted")).forEach(function (n) { n.remove(); });
     strokes = []; $("cellRes").hidden = true; $("autoRes").hidden = true;
@@ -498,11 +510,25 @@
   var drawing = false, last = null, strokes = [];
   function pt(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   var penSeen = false; // Apple Pencil を使ったら、指や手のひらのタッチは線にしない
-  function ignore(e) { if (e.pointerType === "pen") penSeen = true; return penSeen && e.pointerType === "touch"; }
-  cv.addEventListener("pointerdown", function (e) { if (ignore(e)) return; e.preventDefault(); drawing = true; last = pt(e); strokes.push({ x: [Math.round(last.x)], y: [Math.round(last.y)], t: [Date.now()] }); cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.arc(last.x, last.y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); });
+  var activeId = null, inkTimer = null;
+  function ignore(e) {
+    if (e.pointerType === "pen") penSeen = true;
+    if (penSeen && e.pointerType === "touch") return true;
+    return activeId !== null && e.pointerId !== activeId; // 2本目の指・手のひらは無視
+  }
+  function inking(on) {
+    clearTimeout(inkTimer);
+    if (on) document.body.classList.add("inking");
+    else inkTimer = setTimeout(function () { document.body.classList.remove("inking"); }, 700);
+  }
+  ["touchstart", "touchmove", "gesturestart"].forEach(function (t) {
+    $("padzone").addEventListener(t, function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  });
+  cv.addEventListener("pointerdown", function (e) { if (ignore(e) || activeId !== null) return; activeId = e.pointerId; inking(true); e.preventDefault(); drawing = true; last = pt(e); strokes.push({ x: [Math.round(last.x)], y: [Math.round(last.y)], t: [Date.now()] }); cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.arc(last.x, last.y, ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); });
   cv.addEventListener("pointermove", function (e) { if (!drawing || ignore(e)) return; var p = pt(e); ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke(); last = p;
     var st = strokes[strokes.length - 1]; if (st) { st.x.push(Math.round(p.x)); st.y.push(Math.round(p.y)); st.t.push(Date.now()); } });
-  ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) { cv.addEventListener(t, function () { drawing = false; }); });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(function (t) { cv.addEventListener(t, function (e) {
+    if (e.pointerId !== activeId) return; activeId = null; drawing = false; inking(false); }); });
   $("clearBtn").addEventListener("click", function () { ctx.clearRect(0, 0, cv.width, cv.height); strokes = []; $("gradeBtn").textContent = "採点する"; });
 
   $("revealBtn").addEventListener("click", function () {
@@ -542,16 +568,17 @@
     });
   }
   function gradeCells(q) {
-    var chars = Array.from(q.kanji), step = cellSize - 2;
+    var chars = Array.from(q.kanji), step = cellSize;
     return Promise.all(chars.map(function (c, i) {
       if (!isKanji(c)) return Promise.resolve({ fixed: true, c: c });
-      var left = i * step;
+      var left = (i % perRow) * step, top = Math.floor(i / perRow) * step;
       var mine = strokes.filter(function (st) {
         var cx = st.x.reduce(function (a, b) { return a + b; }, 0) / st.x.length;
-        return (cx >= left && cx < left + step) || (i === chars.length - 1 && cx >= left);
+        var cy = st.y.reduce(function (a, b) { return a + b; }, 0) / st.y.length;
+        return Math.min(perRow - 1, Math.floor(cx / step)) === i % perRow && Math.floor(cy / step) === Math.floor(i / perRow);
       });
       if (!mine.length) return Promise.resolve({ c: c, got: "", ok: false });
-      var ink = mine.map(function (st) { return [st.x.map(function (v) { return v - left; }), st.y, st.t]; });
+      var ink = mine.map(function (st) { return [st.x.map(function (v) { return v - left; }), st.y.map(function (v) { return v - top; }), st.t]; });
       return recognize(ink, cellSize).then(function (cands) {
         var top = strict ? cands.slice(0, 1) : cands.slice(0, 3);
         return { c: c, got: cands[0] || "?", ok: top.indexOf(c) >= 0 };
