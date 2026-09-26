@@ -73,6 +73,18 @@
   .yomi { font-size:34px; font-weight:700; letter-spacing:.06em; line-height:1.3; word-break:break-all; }
   .yomi .star { color:var(--red); font-size:18px; vertical-align:middle; margin-right:4px; }
   .hint { color:var(--muted); font-size:15px; }
+  .flowbox { max-height:300px; overflow-y:auto; border:1.5px solid var(--line); border-radius:12px; padding:6px 14px; background:var(--surface); display:flex; flex-direction:column; }
+  .fstep { display:grid; grid-template-columns:7.5em 1fr; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line); font-size:17px; line-height:1.9; }
+  .fstep:last-child { border-bottom:0; }
+  .fstep .fy { font-weight:700; color:var(--accent); font-size:14px; padding-top:3px; font-variant-numeric:tabular-nums; }
+  .fstep.now { background:var(--soft); margin-inline:-14px; padding-inline:14px; }
+  .fb { display:inline-block; min-width:3.2em; border-bottom:2px solid var(--muted); text-align:center; padding:0 4px; margin:0 2px; color:var(--muted); font-size:15px; line-height:1.5; }
+  .fb.cur { border:2px solid var(--red); border-radius:6px; color:var(--red); font-weight:700; background:var(--surface); }
+  .fb.ok { color:var(--green); border-bottom-color:var(--green); font-family:"Klee One",serif; font-weight:600; font-size:18px; }
+  .fb.ng { color:var(--red); border-bottom-color:var(--red); font-family:"Klee One",serif; font-weight:600; font-size:18px; }
+  .fb .n { font-size:11px; margin-right:2px; }
+  .flowdone { margin-top:6px; }
+  @media (max-width:560px) { .fstep { grid-template-columns:1fr; gap:0; } }
   .qphoto { margin:4px 0 8px; display:flex; flex-direction:column; align-items:center; gap:4px; }
   .qphoto img { max-width:100%; max-height:280px; border-radius:10px; object-fit:contain; background:var(--soft); }
   .qphoto figcaption { font-size:10px; color:var(--muted); text-align:center; word-break:break-all; }
@@ -165,6 +177,14 @@
       <button class="chip" data-mode="yomi" aria-pressed="true">よみがな</button>
       <button class="chip" data-mode="photo" aria-pressed="false">写真を見て答える</button>
       <button class="chip" data-mode="mix" aria-pressed="false">まぜる</button>
+      <button class="chip" data-mode="flow" aria-pressed="false">流れ（年表）で解く</button>
+    </div>
+    <div id="flowOpts" hidden>
+      <div class="label">流れで解くときの（　）</div>
+      <div class="chips">
+        <button class="chip" id="fEasy" aria-pressed="true">練習：よみがなを出す</button>
+        <button class="chip" id="fReal" aria-pressed="false">本番：よみがなを出さない</button>
+      </div>
     </div>
     <div class="label">採点のきびしさ（書いた字をコンピューターが読み取って採点）</div>
     <div class="chips">
@@ -195,6 +215,7 @@
         <img id="qImg" alt="問題の写真">
         <figcaption id="qCredit"></figcaption>
       </figure>
+      <div class="flowbox" id="qFlow" hidden></div>
       <div class="yomi" id="qYomi"></div>
       <div class="hint" id="qHint"></div>
       <button class="btn ghost speak" id="speakBtn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>もう一回きく</button>
@@ -270,6 +291,7 @@
 
 <script src="kanji_data.js"></script>
 <script src="photos.js"></script>
+<script src="flow.js"></script>
 <script>
 (function () {
   "use strict";
@@ -379,11 +401,76 @@
     b.addEventListener("click", function () {
       mode = b.dataset.mode;
       $("modeChips").querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-pressed", String(c === b)); });
+      $("flowOpts").hidden = mode !== "flow";
       updateSetupNote();
     });
   });
   function withPhoto(q) { var ph = PHOTO_BY[q.kanji]; return ph ? Object.assign({}, q, { photo: ph }) : q; }
+  /* ---------- 流れ（年表）で解く ---------- */
+  var FLOWS = window.KANJI_FLOWS || {};
+  var flowEasy = true;
+  $("fEasy").addEventListener("click", function () { flowEasy = true; $("fEasy").setAttribute("aria-pressed", "true"); $("fReal").setAttribute("aria-pressed", "false"); });
+  $("fReal").addEventListener("click", function () { flowEasy = false; $("fEasy").setAttribute("aria-pressed", "false"); $("fReal").setAttribute("aria-pressed", "true"); });
+  if (!Object.keys(FLOWS).length) $("modeChips").querySelector('[data-mode="flow"]').hidden = true;
+  var BLANK_RE = /\{([^|}]+)\|([^}]+)\}/g;
+  var flowRes = {};
+  function flowPool() {
+    var units = [];
+    DATA.forEach(function (g) { if (selEras[g.era] && units.indexOf(g.unit) < 0 && FLOWS[g.unit]) units.push(g.unit); });
+    var out = [];
+    units.forEach(function (u) {
+      var n = 0;
+      FLOWS[u].forEach(function (st, si) {
+        st[1].replace(BLANK_RE, function (m, yomi, kanji) {
+          var base = BY_ID[kanji];
+          if (!base) { base = { id: kanji, kanji: kanji, yomi: yomi, hint: "", star: false, unit: u, era: "流れで解く", page: "" }; BY_ID[kanji] = base; }
+          out.push(Object.assign({}, base, { yomi: yomi, flow: { unit: u, step: si, n: n++ } }));
+          return m;
+        });
+      });
+    });
+    return out;
+  }
+  function renderFlow(q) {
+    var box = $("qFlow"); box.innerHTML = "";
+    var n = 0, cur = null;
+    FLOWS[q.flow.unit].forEach(function (st, si) {
+      var row = document.createElement("div"); row.className = "fstep" + (si === q.flow.step ? " now" : "");
+      var y = document.createElement("div"); y.className = "fy"; y.textContent = st[0];
+      var t = document.createElement("div");
+      var last = 0, text = st[1], m;
+      BLANK_RE.lastIndex = 0;
+      while ((m = BLANK_RE.exec(text))) {
+        t.appendChild(document.createTextNode(text.slice(last, m.index)));
+        var b = document.createElement("span"), idx = n++, key = q.flow.unit + "#" + idx;
+        if (idx < q.flow.n) {
+          b.className = "fb " + (flowRes[key] ? "ok" : "ng"); b.textContent = m[2];
+        } else {
+          b.className = "fb" + (idx === q.flow.n ? " cur" : "");
+          var num = document.createElement("span"); num.className = "n"; num.textContent = (idx + 1);
+          b.appendChild(num);
+          b.appendChild(document.createTextNode(flowEasy || idx !== q.flow.n ? (flowEasy ? m[1] : "　　") : "？"));
+          if (idx === q.flow.n) cur = b;
+        }
+        t.appendChild(b); last = m.index + m[0].length;
+      }
+      t.appendChild(document.createTextNode(text.slice(last)));
+      row.appendChild(y); row.appendChild(t); box.appendChild(row);
+    });
+    box.hidden = false;
+    if (cur) setTimeout(function () { box.scrollTop = Math.max(0, cur.parentNode.parentNode.offsetTop - box.offsetTop - 60); }, 0);
+  }
+  function flowSentence(q) {
+    var st = FLOWS[q.flow.unit][q.flow.step], n = 0, base = 0;
+    FLOWS[q.flow.unit].forEach(function (s2, i) { if (i < q.flow.step) base += (s2[1].match(BLANK_RE) || []).length; });
+    return st[0] + "。" + st[1].replace(BLANK_RE, function (m, yomi, kanji) {
+      var idx = base + n++;
+      return idx === q.flow.n ? (flowEasy ? yomi : "なになに") : (idx < q.flow.n ? yomi : "なになに");
+    });
+  }
+
   function pool() {
+    if (mode === "flow") return flowPool();
     if (mode === "photo") return basePool().filter(function (q) { return PHOTO_BY[q.kanji]; }).map(withPhoto);
     if (mode === "mix") return basePool().map(function (q) { return PHOTO_BY[q.kanji] && Math.random() < 0.5 ? withPhoto(q) : q; });
     return basePool();
@@ -394,7 +481,7 @@
   }
   function updateSetupNote() {
     var p = pool().length;
-    $("setupNote").textContent = p ? "えらんだはんいには " + p + " 問あるよ。ランダムに " + (count && count < p ? count : p) + " 問出すね。" : (mode === "photo" ? "このはんいには写真の問題がまだないよ。" : "はんいを1つ以上えらんでね。");
+    $("setupNote").textContent = p && mode === "flow" ? "えらんだ回の年表を、年号の順に " + p + " か所の（　）で出すね（問題の数の設定は使わないよ）。" : p ? "えらんだはんいには " + p + " 問あるよ。ランダムに " + (count && count < p ? count : p) + " 問出すね。" : (mode === "photo" ? "このはんいには写真の問題がまだないよ。" : "はんいを1つ以上えらんでね。");
     $("startBtn").disabled = !p;
   }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -419,6 +506,7 @@
   }
   function speakQ(q) {
     if (q.photo) { speak(q.photo.prompt.replace("？", "")); return; }
+    if (q.flow) { speak(flowSentence(q)); return; }
     speak(q.yomi + (voice.hint && q.hint ? "。ヒント。" + q.hint : ""));
   }
   function syncVoiceChips() {
@@ -451,6 +539,7 @@
     setTab("test"); show("view-quiz"); renderQ();
   }
   $("startBtn").addEventListener("click", function () {
+    if (mode === "flow") { flowRes = {}; startQuiz(pool(), false); return; }
     var p = shuffle(pool()); startQuiz(count ? p.slice(0, count) : p, false);
   });
   $("quitBtn").addEventListener("click", function () { if (synth) synth.cancel(); quiz.active = false; show("view-setup"); });
@@ -465,8 +554,13 @@
     if (q.star) { var s = document.createElement("span"); s.className = "star"; s.textContent = "★"; $("qYomi").appendChild(s); }
     $("qYomi").appendChild(document.createTextNode(q.yomi));
     $("qHint").textContent = q.hint ? "ヒント：" + q.hint : "";
-    $("qPhoto").hidden = !q.photo; $("qYomi").classList.remove("prompt");
-    if (q.photo) {
+    $("qPhoto").hidden = !q.photo; $("qYomi").classList.remove("prompt"); $("qFlow").hidden = !q.flow; $("qYomi").hidden = false;
+    if (q.flow) {
+      $("qEra").textContent = q.flow.unit + "　流れ（年表）で解く　（" + (q.flow.n + 1) + "）";
+      renderFlow(q);
+      $("qYomi").hidden = true;
+      $("qHint").textContent = flowEasy ? "赤いわくの（" + (q.flow.n + 1) + "）を漢字で書こう" : "赤いわくの（" + (q.flow.n + 1) + "）に入る言葉を漢字で書こう";
+    } else if (q.photo) {
       $("qImg").src = q.photo.img; $("qCredit").textContent = q.photo.credit;
       $("qYomi").textContent = q.photo.prompt; $("qYomi").classList.add("prompt");
       $("qHint").textContent = "";
@@ -533,7 +627,9 @@
 
   $("revealBtn").addEventListener("click", function () {
     $("aKanji").textContent = quiz.list[quiz.i].kanji;
-    if (quiz.list[quiz.i].photo) {
+    if (quiz.list[quiz.i].flow) {
+      var fq = quiz.list[quiz.i]; $("qHint").textContent = "よみ：" + fq.yomi;
+    } else if (quiz.list[quiz.i].photo) {
       var pq = quiz.list[quiz.i];
       $("qHint").textContent = "よみ：" + pq.yomi + (pq.hint ? "　" + pq.hint : "");
     } else if (voice.hide) {
@@ -633,6 +729,7 @@
     var q = quiz.list[quiz.i];
     $("okBtn").disabled = $("ngBtn").disabled = true;
     recordAnswer(q, ok);
+    if (q.flow) flowRes[q.flow.unit + "#" + q.flow.n] = ok;
     if (ok) quiz.right += 1; else quiz.wrong.push(q);
     showMark(ok);
     setTimeout(function () {
@@ -652,10 +749,21 @@
       "まちがえた " + quiz.wrong.length + " 問は、まちがいノートに入れたよ。";
     var list = $("resultList"); list.innerHTML = "";
     quiz.wrong.forEach(function (q) { list.appendChild(itemEl(q, "")); });
+    var lastQ = quiz.list[quiz.list.length - 1];
+    if (lastQ && lastQ.flow) {
+      var done = Object.assign({}, lastQ, { flow: Object.assign({}, lastQ.flow, { n: lastQ.flow.n + 1, step: -1 }) });
+      renderFlow(done);
+      var fb = $("qFlow").cloneNode(true); fb.id = ""; fb.className = "flowbox flowdone"; fb.hidden = false; fb.style.maxHeight = "none";
+      var h = document.createElement("div"); h.className = "label"; h.textContent = "年表で見なおそう（緑＝○、赤＝×）";
+      list.appendChild(h); list.appendChild(fb);
+    }
     $("retryWrongBtn").hidden = !quiz.wrong.length;
     show("view-result");
   }
-  $("retryWrongBtn").addEventListener("click", function () { startQuiz(shuffle(quiz.wrong), quiz.fromNote); });
+  $("retryWrongBtn").addEventListener("click", function () {
+    var w = quiz.wrong.map(function (q) { var c = Object.assign({}, q); delete c.flow; return c; });
+    startQuiz(shuffle(w), quiz.fromNote);
+  });
   $("backBtn").addEventListener("click", function () { show("view-setup"); });
 
   /* ---------- 一覧 ---------- */
