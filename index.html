@@ -16,21 +16,21 @@
   :root {
     --bg:#eef2f6; --surface:#ffffff; --ink:#1f2a44; --muted:#66758a; --line:#d6dee7;
     --grid:#8fa6bd; --guide:#d3dde7; --pen:#1f2a44;
-    --accent:#2b5c8f; --accent-ink:#ffffff; --red:#c8412b; --green:#2f8f5b; --soft:#f4f7fa;
+    --accent:#2b5c8f; --accent-ink:#ffffff; --tint:#e6eef7; --red:#c8412b; --green:#2f8f5b; --soft:#f4f7fa;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
       --bg:#121821; --surface:#1b2330; --ink:#e6ecf3; --muted:#9aa8ba; --line:#2c3848;
       --grid:#5d7188; --guide:#2b3748; --pen:#f1f5fa;
-      --accent:#6fa3d8; --accent-ink:#0f1620; --red:#ff7a62; --green:#5cc98b; --soft:#222c3a;
+      --accent:#6fa3d8; --accent-ink:#0f1620; --tint:#1e3147; --tint:#1e3147; --red:#ff7a62; --green:#5cc98b; --soft:#222c3a;
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
     --bg:#121821; --surface:#1b2330; --ink:#e6ecf3; --muted:#9aa8ba; --line:#2c3848;
     --grid:#5d7188; --guide:#2b3748; --pen:#f1f5fa;
-    --accent:#6fa3d8; --accent-ink:#0f1620; --red:#ff7a62; --green:#5cc98b; --soft:#222c3a;
+    --accent:#6fa3d8; --accent-ink:#0f1620; --tint:#1e3147; --red:#ff7a62; --green:#5cc98b; --soft:#222c3a;
   }
   * { box-sizing:border-box; }
   body { background:var(--bg); color:var(--ink); font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Meiryo",sans-serif; font-size:16px; }
@@ -53,7 +53,48 @@
   .wrap > * { min-width:0; }
   .chip { max-width:100%; }
   .chip { font:inherit; font-size:15px; border:2px solid var(--line); background:var(--surface); color:var(--ink); border-radius:999px; padding:7px 14px; cursor:pointer; }
-  .chip[aria-pressed="true"] { border-color:var(--accent); background:var(--accent); color:var(--accent-ink); }
+  .chip[aria-pressed="true"] { border-color:var(--accent); background:var(--tint); color:var(--ink); font-weight:700; }
+  .chip[aria-pressed="true"]::before { content:"✓ "; color:var(--accent); }
+  .setup { gap:18px; padding-bottom:0; }
+  .hello h2 { font-size:22px; }
+  .hello p { margin:4px 0 0; }
+  .modes { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+  .chip.mode { border-radius:14px; padding:14px 16px; text-align:left; display:flex; flex-direction:column; gap:3px; }
+  .chip.mode::before { content:none; }
+  .chip.mode b { font-size:18px; }
+  .chip.mode span { font-size:13px; color:var(--muted); font-weight:500; }
+  .chip.mode[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .chip.mode[aria-pressed="true"] span { color:var(--accent-ink); opacity:.85; }
+  .seg { display:flex; gap:8px; flex-wrap:wrap; margin-top:-6px; }
+  .sect { display:flex; flex-direction:column; gap:10px; }
+  .secthead { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .quick { display:flex; gap:6px; }
+  .units { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
+  .ucard { font:inherit; text-align:left; border:2px solid var(--line); background:var(--surface); color:var(--ink); border-radius:12px; padding:10px 12px; cursor:pointer; display:flex; flex-direction:column; gap:2px; position:relative; }
+  .ucard .no { font-size:12px; color:var(--muted); font-weight:700; }
+  .ucard .nm { font-size:15px; font-weight:700; line-height:1.3; }
+  .ucard .meta { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .ucard .ck { position:absolute; top:8px; right:10px; width:22px; height:22px; border-radius:50%; border:2px solid var(--line); display:grid; place-items:center; font-size:13px; color:transparent; }
+  .ucard.on { border-color:var(--accent); background:var(--tint); }
+  .ucard.on .ck { background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .ucard.part { border-color:var(--accent); border-style:dashed; }
+  .ucard.part .ck { border-color:var(--accent); color:var(--accent); }
+  details.more { border-top:1px solid var(--line); padding-top:10px; }
+  details.more summary { cursor:pointer; font-size:14px; font-weight:700; color:var(--accent); list-style:none; }
+  details.more summary::-webkit-details-marker { display:none; }
+  details.more summary::before { content:"＋ "; }
+  details.more[open] summary::before { content:"－ "; }
+  .themes { display:flex; flex-direction:column; gap:12px; margin-top:12px; }
+  .themes .unitHead { font-size:13px; color:var(--muted); }
+  .themes .chip { font-size:13px; padding:5px 11px; }
+  .setgrid { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .setgrid .label { margin-top:6px; }
+  .startbar { position:sticky; bottom:0; margin-inline:-20px; padding:12px 20px calc(12px + env(safe-area-inset-bottom, 0px)); background:var(--surface); border-top:1px solid var(--line); border-radius:0 0 14px 14px; display:flex; align-items:center; gap:12px; }
+  .startbar p { margin:0; flex:1; font-size:13px; }
+  .startbar .btn { min-width:9em; }
+  .voicebar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .voicebar .speak { margin-top:8px; }
+  @media (max-width:480px) { .startbar { flex-direction:column; align-items:stretch; } }
   .btn { font:inherit; font-weight:700; font-size:17px; border:0; border-radius:12px; padding:13px 22px; cursor:pointer; background:var(--accent); color:var(--accent-ink); }
   .btn.ghost { background:var(--soft); color:var(--ink); }
   .btn.red { background:var(--red); color:#fff; }
@@ -164,45 +205,59 @@
   </nav>
 
   <!-- テスト：スタート -->
-  <section class="card" id="view-setup">
-    <h2>テストをはじめよう</h2>
-    <div class="label">はんい（えらんだところから出るよ）</div>
-    <div class="chips" id="eraChips"></div>
-    <div class="label">出す問題</div>
-    <div class="chips">
-      <button class="chip" id="starOnly" aria-pressed="false">★だいじな言葉だけ</button>
+  <section class="card setup" id="view-setup">
+    <div class="hello">
+      <h2>きょうは どれをやる？</h2>
+      <p class="muted" id="helloStat"></p>
     </div>
-    <div class="label">問題のタイプ</div>
-    <div class="chips" id="modeChips">
-      <button class="chip" data-mode="yomi" aria-pressed="true">よみがな</button>
-      <button class="chip" data-mode="photo" aria-pressed="false">写真を見て答える</button>
-      <button class="chip" data-mode="mix" aria-pressed="false">まぜる</button>
-      <button class="chip" data-mode="flow" aria-pressed="false">流れ（年表）で解く</button>
+    <div class="modes" id="modeChips">
+      <button class="chip mode" data-mode="yomi" aria-pressed="true"><b>よみがな</b><span>よみを見て漢字を書く</span></button>
+      <button class="chip mode" data-mode="flow" aria-pressed="false"><b>年表で解く</b><span>年号の順に（　）をうめる</span></button>
+      <button class="chip mode" data-mode="photo" aria-pressed="false"><b>写真で答える</b><span>写真を見て名前を書く</span></button>
+      <button class="chip mode" data-mode="mix" aria-pressed="false"><b>まぜる</b><span>よみがなと写真をまぜる</span></button>
     </div>
-    <div id="flowOpts" hidden>
-      <div class="label">流れで解くときの（　）</div>
-      <div class="chips">
-        <button class="chip" id="fEasy" aria-pressed="true">練習：よみがなを出す</button>
-        <button class="chip" id="fReal" aria-pressed="false">本番：よみがなを出さない</button>
+    <div id="flowOpts" class="seg" hidden>
+      <button class="chip" id="fEasy" aria-pressed="true">練習：よみがなあり</button>
+      <button class="chip" id="fReal" aria-pressed="false">本番：よみがななし</button>
+    </div>
+
+    <div class="sect">
+      <div class="secthead">
+        <span class="label">はんい（回をえらぶ）</span>
+        <span class="quick"><button class="tiny" id="selAll">ぜんぶ</button><button class="tiny" id="selNone">はずす</button></span>
       </div>
+      <div class="units" id="unitCards"></div>
+      <details class="more">
+        <summary>テーマをくわしく選ぶ</summary>
+        <div class="themes" id="eraChips"></div>
+      </details>
     </div>
-    <div class="label">採点のきびしさ（書いた字をコンピューターが読み取って採点）</div>
-    <div class="chips">
-      <button class="chip" id="gNormal" aria-pressed="true">ふつう</button>
-      <button class="chip" id="gStrict" aria-pressed="false">きびしめ</button>
+
+    <details class="more settings">
+      <summary>せってい（問題の数・★だけ・採点・読み上げ）</summary>
+      <div class="setgrid">
+        <div class="label">問題の数</div>
+        <div class="chips" id="countChips"></div>
+        <div class="label">出す問題</div>
+        <div class="chips"><button class="chip" id="starOnly" aria-pressed="false">★だいじな言葉だけ</button></div>
+        <div class="label">採点のきびしさ</div>
+        <div class="chips">
+          <button class="chip" id="gNormal" aria-pressed="true">ふつう</button>
+          <button class="chip" id="gStrict" aria-pressed="false">きびしめ</button>
+        </div>
+        <div class="label" id="voiceLabel">読み上げ</div>
+        <div class="chips" id="voiceChips">
+          <button class="chip" id="vAuto" aria-pressed="true">問題を声で読む</button>
+          <button class="chip" id="vHint" aria-pressed="false">ヒントも読む</button>
+          <button class="chip" id="vHide" aria-pressed="false">よみがなをかくす（耳だけで）</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="startbar">
+      <p class="muted" id="setupNote"></p>
+      <button class="btn" id="startBtn">スタート</button>
     </div>
-    <div class="label" id="voiceLabel">読み上げ</div>
-    <div class="chips" id="voiceChips">
-      <button class="chip" id="vAuto" aria-pressed="true">問題を声で読む</button>
-      <button class="chip" id="vHint" aria-pressed="false">ヒントも読む</button>
-      <button class="chip" id="vHide" aria-pressed="false">よみがなをかくす（耳だけで）</button>
-    </div>
-    <div class="label">問題の数</div>
-    <div class="chips" id="countChips"></div>
-    <div class="row">
-      <button class="btn grow" id="startBtn">スタート</button>
-    </div>
-    <p class="muted" id="setupNote"></p>
   </section>
 
   <!-- テスト：出題 -->
@@ -218,7 +273,8 @@
       <div class="flowbox" id="qFlow" hidden></div>
       <div class="yomi" id="qYomi"></div>
       <div class="hint" id="qHint"></div>
-      <button class="btn ghost speak" id="speakBtn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>もう一回きく</button>
+      <div class="voicebar"><button class="btn ghost speak" id="muteBtn" type="button"></button>
+      <button class="btn ghost speak" id="speakBtn" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>もう一回きく</button></div>
     </div>
     <div class="row" id="writeBtns">
       <button class="btn ghost" id="clearBtn">けす</button>
@@ -350,6 +406,10 @@
     if (name === "all") { renderAll(); show("view-all"); }
   }
   Object.keys(tabs).forEach(function (k) { tabs[k].addEventListener("click", function () { setTab(k); }); });
+  function updateHello() {
+    var n = Object.keys(state.miss).length;
+    $("helloStat").textContent = "これまでに " + state.answered + " 問・せいかい " + state.correct + " 問" + (n ? "／まちがいノートに " + n + " 問あるよ" : "");
+  }
   function refreshBadges() { var n = Object.keys(state.miss).length; $("missCount").textContent = n ? String(n) : ""; }
 
   /* ---------- スタート画面 ---------- */
@@ -357,29 +417,47 @@
   var count = 10;
   var UNITS = [];
   DATA.forEach(function (g) { if (UNITS.indexOf(g.unit) < 0) UNITS.push(g.unit); });
+  var SEL_KEY = "rekishi-kanji-sel-v1", themeBtns = {}, unitCards = {};
+  try { var savedSel = JSON.parse(localStorage.getItem(SEL_KEY) || "null"); if (savedSel) DATA.forEach(function (g) { if (g.era in savedSel) selEras[g.era] = !!savedSel[g.era]; }); } catch (e) { /* 読めない環境 */ }
+  function saveSel() { try { localStorage.setItem(SEL_KEY, JSON.stringify(selEras)); } catch (e) { /* 保存できない環境 */ } }
+  function syncSel() {
+    DATA.forEach(function (g) { themeBtns[g.era].setAttribute("aria-pressed", String(!!selEras[g.era])); });
+    UNITS.forEach(function (u) {
+      var gs = DATA.filter(function (g) { return g.unit === u; }), n = gs.filter(function (g) { return selEras[g.era]; }).length;
+      unitCards[u].className = "ucard" + (n === gs.length ? " on" : n ? " part" : "");
+      unitCards[u].setAttribute("aria-pressed", String(n === gs.length));
+      unitCards[u].querySelector(".ck").textContent = n === gs.length ? "✓" : n ? "−" : "";
+    });
+    saveSel(); updateSetupNote();
+  }
   UNITS.forEach(function (u) {
+    var gs = DATA.filter(function (g) { return g.unit === u; });
+    var m = u.match(/^(第\d+回)\s*(.*)$/);
+    var card = document.createElement("button"); card.className = "ucard"; card.type = "button";
+    var no = document.createElement("span"); no.className = "no"; no.textContent = m ? m[1] : "演習";
+    var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = m ? m[2] : u.replace(/に出てくる漢字$/, "");
+    var words = gs.reduce(function (t, g) { return t + g.items.length; }, 0);
+    var meta = document.createElement("span"); meta.className = "meta"; meta.textContent = (gs[0].pages || "") + "・" + words + "語";
+    var ck = document.createElement("span"); ck.className = "ck"; ck.setAttribute("aria-hidden", "true");
+    card.appendChild(no); card.appendChild(nm); card.appendChild(meta); card.appendChild(ck);
+    card.addEventListener("click", function () {
+      var on = !gs.every(function (g) { return selEras[g.era]; });
+      gs.forEach(function (g) { selEras[g.era] = on; }); syncSel();
+    });
+    unitCards[u] = card; $("unitCards").appendChild(card);
+
     var block = document.createElement("div"); block.className = "unitBlock";
-    var head = document.createElement("div"); head.className = "unitHead";
-    var first = DATA.filter(function (g) { return g.unit === u; })[0];
-    var name = document.createElement("span"); name.textContent = u + (first.pages ? "（" + first.pages + "）" : "");
-    var all = document.createElement("button"); all.className = "tiny"; all.textContent = "この回をぜんぶ / はずす";
-    head.appendChild(name); head.appendChild(all); block.appendChild(head);
+    var head = document.createElement("div"); head.className = "unitHead"; head.textContent = u;
     var chips = document.createElement("div"); chips.className = "chips";
-    var mine = [];
-    DATA.filter(function (g) { return g.unit === u; }).forEach(function (g) {
-      var b = document.createElement("button");
-      b.className = "chip"; b.textContent = g.era + "（" + g.items.length + "）";
-      b.setAttribute("aria-pressed", "true");
-      b.addEventListener("click", function () { selEras[g.era] = !selEras[g.era]; b.setAttribute("aria-pressed", String(selEras[g.era])); updateSetupNote(); });
-      mine.push({ g: g, b: b }); chips.appendChild(b);
+    gs.forEach(function (g) {
+      var bt = document.createElement("button"); bt.className = "chip"; bt.textContent = g.era + "（" + g.items.length + "）";
+      bt.addEventListener("click", function () { selEras[g.era] = !selEras[g.era]; syncSel(); });
+      themeBtns[g.era] = bt; chips.appendChild(bt);
     });
-    all.addEventListener("click", function () {
-      var on = !mine.every(function (m) { return selEras[m.g.era]; });
-      mine.forEach(function (m) { selEras[m.g.era] = on; m.b.setAttribute("aria-pressed", String(on)); });
-      updateSetupNote();
-    });
-    block.appendChild(chips); $("eraChips").appendChild(block);
+    block.appendChild(head); block.appendChild(chips); $("eraChips").appendChild(block);
   });
+  $("selAll").addEventListener("click", function () { DATA.forEach(function (g) { selEras[g.era] = true; }); syncSel(); });
+  $("selNone").addEventListener("click", function () { DATA.forEach(function (g) { selEras[g.era] = false; }); syncSel(); });
   [10, 20, 0].forEach(function (n) {
     var b = document.createElement("button");
     b.className = "chip"; b.textContent = n ? n + "問" : "ぜんぶ"; b.dataset.n = n;
@@ -481,7 +559,7 @@
   }
   function updateSetupNote() {
     var p = pool().length;
-    $("setupNote").textContent = p && mode === "flow" ? "えらんだ回の年表を、年号の順に " + p + " か所の（　）で出すね（問題の数の設定は使わないよ）。" : p ? "えらんだはんいには " + p + " 問あるよ。ランダムに " + (count && count < p ? count : p) + " 問出すね。" : (mode === "photo" ? "このはんいには写真の問題がまだないよ。" : "はんいを1つ以上えらんでね。");
+    $("setupNote").textContent = p && mode === "flow" ? "年表の（　）" + p + " か所を、年号の順に出すよ" : p ? "えらんだ回から " + (count && count < p ? count : p) + " 問（全" + p + "問からランダム）" : (mode === "photo" ? "このはんいには写真の問題がまだないよ。" : "回を1つ以上えらんでね。");
     $("startBtn").disabled = !p;
   }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -523,13 +601,21 @@
         voice[k] = !voice[k];
         if (k === "hide" && voice.hide) voice.auto = true;
         if (k === "auto" && !voice.auto) voice.hide = false;
-        syncVoiceChips();
+        syncVoiceChips(); syncMute();
       });
     });
     syncVoiceChips();
     synth.getVoices();
   }
   $("speakBtn").addEventListener("click", function () { speakQ(quiz.list[quiz.i]); });
+  function syncMute() { $("muteBtn").textContent = voice.auto ? "🔇 声を止める" : "🔊 声を出す"; $("muteBtn").hidden = !synth; }
+  $("muteBtn").addEventListener("click", function () {
+    voice.auto = !voice.auto;
+    if (!voice.auto) { voice.hide = false; if (synth) synth.cancel(); }
+    else if (quiz.active) speakQ(quiz.list[quiz.i]);
+    syncVoiceChips(); syncMute();
+  });
+  syncMute();
 
   /* ---------- 出題 ---------- */
   var quiz = { active: false, list: [], i: 0, wrong: [], right: 0, fromNote: false };
@@ -764,7 +850,7 @@
     var w = quiz.wrong.map(function (q) { var c = Object.assign({}, q); delete c.flow; return c; });
     startQuiz(shuffle(w), quiz.fromNote);
   });
-  $("backBtn").addEventListener("click", function () { show("view-setup"); });
+  $("backBtn").addEventListener("click", function () { updateHello(); show("view-setup"); });
 
   /* ---------- 一覧 ---------- */
   function itemEl(q, metaHtml, onRemove) {
@@ -851,7 +937,7 @@
     });
   }
 
-  refreshBadges(); updateSetupNote();
+  refreshBadges(); syncSel(); updateHello();
 })();
 </script>
 
